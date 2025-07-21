@@ -1,4 +1,4 @@
-# Curling Club Data Microservice
+# Curling Club Manager Scraper Microservice
 
 This microservice provides a public RESTish API for fetching team and game data from a Curling Club Manager admin area. Since CCM does not expose a public API, this service scrapes the necessary data using Playwright and implements a robust caching layer for performance and resilience.
 
