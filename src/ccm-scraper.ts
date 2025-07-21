@@ -372,7 +372,7 @@ export async function getAllGames(allTeams: Team[]): Promise<Game[]> {
           return []; // Return empty array for this league
         }
 
-        const scrapedGamesData: ScrapedGameData[] = await leagueGamePage.evaluate(() => {
+        const scrapedGamesData: ScrapedGameData[] = await leagueGamePage.evaluate((args: { SHEET_NAMES: string[] }) => {
           const gameRows = document.querySelectorAll("table.table-striped tbody tr");
           const games: ScrapedGameData[] = [];
           gameRows.forEach((row) => {
@@ -382,13 +382,13 @@ export async function getAllGames(allTeams: Team[]): Promise<Game[]> {
               const sheet = cells[3]?.innerText.trim() || ""; // 4th td is index 3
               const teamNames = cells[2]?.innerText.trim() || ""; // 3rd td is index 2
 
-              if (SHEET_NAMES.includes(sheet.toUpperCase())) {
+              if (args.SHEET_NAMES.includes(sheet.toUpperCase())) {
                 games.push({ date, sheet, teamNames });
               }
             }
           });
           return games;
-        });
+        }, { SHEET_NAMES });
 
         const gamesForLeague: Game[] = [];
         for (const scrapedGame of scrapedGamesData) {
