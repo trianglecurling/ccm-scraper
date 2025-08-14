@@ -20,9 +20,7 @@ let inMemoryCache: CacheData | null = null;
 const CACHE_STALE_THRESHOLD_MS = 1000 * 60 * 60; // 1 hour for in-memory staleness
 
 // Background refresh settings
-const REFRESH_INTERVAL_MS = 4 * 60 * 60 * 1000; // 4 hours
-const REFRESH_START_HOUR = 6; // 6 AM
-const REFRESH_END_HOUR = 22; // 10 PM (22:00)
+const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (once per day)
 
 let refreshTimeout: NodeJS.Timeout | null = null;
 let isRefreshing = false; // Flag to prevent concurrent refreshes
@@ -177,53 +175,20 @@ export async function initializeCache(): Promise<void> {
  * Schedules the background cache refresh.
  * This function only schedules the *next* refresh, it does not perform one immediately.
  */
-function startBackgroundRefreshTimer() { // <-- Renamed for clarity
+function startBackgroundRefreshTimer() {
     if (refreshTimeout) {
         clearTimeout(refreshTimeout);
     }
 
-    const scheduleNextRefreshInWindow = () => {
-        const now = new Date();
-        const currentHour = now.getHours();
-        let delayToNextCheck: number;
-
-        if (currentHour >= REFRESH_START_HOUR && currentHour < REFRESH_END_HOUR) {
-            // If currently within the window, schedule the actual refresh after the interval
-            console.log(`Scheduling next cache refresh in ${REFRESH_INTERVAL_MS / 1000 / 60 / 60} hours.`);
-            delayToNextCheck = REFRESH_INTERVAL_MS;
-            // This will trigger a refresh() on the next tick
-            refreshTimeout = setTimeout(() => {
-                refreshCache().finally(() => {
-                    // After refresh, schedule the very next one
-                    startBackgroundRefreshTimer(); // Reschedule after completion
-                });
-            }, delayToNextCheck);
-        } else {
-            // If outside window, schedule to wake up at the start of the next refresh window
-            const nextRefreshWindowStart = new Date(now);
-            if (currentHour < REFRESH_START_HOUR) {
-                // Still before 6 AM today
-                nextRefreshWindowStart.setHours(REFRESH_START_HOUR, 0, 0, 0);
-            } else {
-                // After 10 PM, schedule for 6 AM the next day
-                nextRefreshWindowStart.setDate(now.getDate() + 1);
-                nextRefreshWindowStart.setHours(REFRESH_START_HOUR, 0, 0, 0);
-            }
-            delayToNextCheck = nextRefreshWindowStart.getTime() - now.getTime();
-            console.log(
-                `Outside refresh window (6AM-10PM). Next refresh check scheduled for ${nextRefreshWindowStart.toLocaleString()} (in ${Math.round(delayToNextCheck / 1000 / 60)} minutes).`,
-            );
-            // This will not refresh immediately, just schedule the check
-            refreshTimeout = setTimeout(() => {
-                // When the delay is over, it's now within the window, so we'll trigger a refresh
-                refreshCache().finally(() => {
-                    startBackgroundRefreshTimer(); // Reschedule after completion
-                });
-            }, delayToNextCheck);
-        }
-    };
-
-    scheduleNextRefreshInWindow(); // Initiate the scheduling
+    // Schedule the next cache refresh in 24 hours
+    console.log(`Scheduling next cache refresh in ${REFRESH_INTERVAL_MS / 1000 / 60 / 60} hours.`);
+    
+    refreshTimeout = setTimeout(() => {
+        refreshCache().finally(() => {
+            // After refresh, schedule the next one
+            startBackgroundRefreshTimer(); // Reschedule after completion
+        });
+    }, REFRESH_INTERVAL_MS);
 }
 
 /**

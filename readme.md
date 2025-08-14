@@ -36,7 +36,7 @@ The majority of this project was vibe-coded using Gemini 2.5 Flash.
 *   **Data Scraping:** Uses Playwright to extract data from the Curling Club Manager (CCM) web interface.
 *   **Persistent Caching:** Stores scraped data to local JSON files (`cache/`) to persist across application restarts.
 *   **In-Memory Caching:** Maintains a quick-access in-memory cache to reduce file I/O for frequent requests.
-*   **Scheduled Refresh:** Periodically scrapes for new data (every 4 hours between 6 AM and 10 PM) to keep the cache fresh.
+*   **Scheduled Refresh:** Periodically scrapes for new data (once per day) to keep the cache fresh.
 *   **On-Demand Refresh:** Supports manual cache refresh via an API query parameter.
 *   **Concurrent Scraping:** Utilizes Playwright's `BrowserContext` to manage authenticated sessions and limit concurrent page loads for efficient scraping.
 *   **Robust Data Processing:** Handles common scraping challenges like parsing dates, cleaning team names, and linking related entities (Games to Teams).
@@ -281,8 +281,7 @@ The microservice employs a multi-level caching strategy to optimize performance 
     *   Data is considered "stale" after 1 hour (`CACHE_STALE_THRESHOLD_MS`). If an API request finds the in-memory cache stale, it attempts to reload from the persistent file cache.
 
 3.  **Background Refresh:**
-    *   The `refreshCache()` function is executed periodically (every 4 hours, configurable via `REFRESH_INTERVAL_MS`) by a scheduled timer (`startBackgroundRefreshTimer`).
-    *   This refresh cycle is restricted to operating hours (between 6 AM and 10 PM, configurable via `REFRESH_START_HOUR` and `REFRESH_END_HOUR`) to avoid unnecessary scraping during off-peak times.
+    *   The `refreshCache()` function is executed periodically (once per day, configurable via `REFRESH_INTERVAL_MS`) by a scheduled timer (`startBackgroundRefreshTimer`).
     *   It scrapes the latest data from the CCM website, updates the in-memory cache, and then saves the fresh data to the file system.
 
 4.  **On-Demand Refresh (`refreshCache=true`):**
